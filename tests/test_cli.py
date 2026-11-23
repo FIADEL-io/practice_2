@@ -1,6 +1,9 @@
 import contextlib
 import io
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from bootstrap import ROOT
@@ -10,6 +13,15 @@ from depgraph.graph import Graph
 
 
 class CliTests(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._previous = os.getcwd()
+        self._folder = tempfile.TemporaryDirectory()
+        os.chdir(self._folder.name)
+
+    def tearDown(self) -> None:
+        os.chdir(self._previous)
+        self._folder.cleanup()
 
     def test_prints_parameters_as_key_value(self) -> None:
         stdout = io.StringIO()
@@ -77,6 +89,9 @@ class CliTests(unittest.TestCase):
         text = stdout.getvalue()
         self.assertEqual(code, EXIT_OK)
         self.assertIn("порядок загрузки:\nD\nB\nC\nA", text)
+        self.assertTrue(Path("order.png").is_file())
+        source = Path("order.puml").read_text(encoding="utf-8")
+        self.assertIn("@startuml", source)
 
     def test_filter_example_omits_filtered_package(self) -> None:
         stdout = io.StringIO()
@@ -87,6 +102,21 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, EXIT_OK)
         self.assertIn("порядок загрузки:\nD\nB\nA", text)
         self.assertNotIn("\nC\n", text)
+
+    def test_three_packages_write_diagrams(self) -> None:
+        expected = {
+            "serde": "SERDE",
+            "tokio": "TOKIO",
+            "regex": "REGEX",
+        }
+        for image, package in expected.items():
+            path = ROOT / "examples" / "viz" / f"{image}.yaml"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = main(["--config", str(path)])
+            source = Path(f"{image}.puml").read_text(encoding="utf-8")
+            self.assertEqual(code, EXIT_OK)
+            self.assertTrue(Path(f"{image}.png").is_file())
+            self.assertIn(f'"{package}"', source)
 
     def test_config_error_goes_to_stderr(self) -> None:
         stdout = io.StringIO()

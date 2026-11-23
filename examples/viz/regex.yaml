@@ -1,0 +1,5 @@
+package_name: REGEX
+repository: regex.txt
+test_repository_mode: true
+graph_image_name: regex.png
+filter_substring: ""

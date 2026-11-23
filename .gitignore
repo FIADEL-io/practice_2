@@ -5,6 +5,7 @@ venv/
 .idea/
 .vscode/
 *.png
+*.puml
 .pytest_cache/
 *.egg-info/
 dist/

@@ -1,0 +1,5 @@
+package_name: SERDE
+repository: serde.txt
+test_repository_mode: true
+graph_image_name: serde.png
+filter_substring: ""

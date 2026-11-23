@@ -7,6 +7,7 @@ from depgraph.cargo_manifest import CargoError
 from depgraph.config import AppConfig, ConfigError, load_config
 from depgraph.constants import EXIT_CONFIG, EXIT_OK
 from depgraph.dependencies import format_dependencies, load_direct_dependencies
+from depgraph.diagram import save_diagram
 from depgraph.graph import (
     GraphError,
     format_graph,
@@ -26,7 +27,10 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_CONFIG
     print(format_parameters(config))
     if config.test_repository_mode:
-        return _print_graph(lambda: build_test_graph(config))
+        return _print_graph(
+            lambda: build_test_graph(config),
+            config.graph_image_name,
+        )
     try:
         dependencies = load_direct_dependencies(config)
     except CargoError as error:
@@ -38,10 +42,11 @@ def main(argv: list[str] | None = None) -> int:
         print(rendered)
     return _print_graph(
         lambda: build_cargo_graph(config, dependencies),
+        config.graph_image_name,
     )
 
 
-def _print_graph(load) -> int:
+def _print_graph(load, image_name: str) -> int:
     try:
         graph = load()
     except (GraphError, CargoError) as error:
@@ -49,6 +54,13 @@ def _print_graph(load) -> int:
         return EXIT_CONFIG
     print(format_graph(graph))
     print(format_load_order(load_order(graph)))
+    try:
+        source, image = save_diagram(graph, image_name)
+    except OSError as error:
+        print(f"ошибка графа: {error}", file=sys.stderr)
+        return EXIT_CONFIG
+    print(f"plantuml: {source}")
+    print(f"изображение: {image}")
     return EXIT_OK
 
 
@@ -62,7 +74,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         prog="depgraph",
         description=(
             "Визуализация графа зависимостей Cargo. "
-            "Этап 4 печатает порядок загрузки пакетов."
+            "Этап 5 сохраняет граф в PlantUML и PNG."
         ),
     )
     parser.add_argument(
