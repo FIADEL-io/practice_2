@@ -7,7 +7,12 @@ from depgraph.cargo_manifest import CargoError
 from depgraph.config import AppConfig, ConfigError, load_config
 from depgraph.constants import EXIT_CONFIG, EXIT_OK
 from depgraph.dependencies import format_dependencies, load_direct_dependencies
-from depgraph.graph import GraphError, format_graph
+from depgraph.graph import (
+    GraphError,
+    format_graph,
+    format_load_order,
+    load_order,
+)
 from depgraph.resolve import build_cargo_graph, build_test_graph
 
 
@@ -43,6 +48,7 @@ def _print_graph(load) -> int:
         print(f"ошибка графа: {error}", file=sys.stderr)
         return EXIT_CONFIG
     print(format_graph(graph))
+    print(format_load_order(load_order(graph)))
     return EXIT_OK
 
 
@@ -56,7 +62,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         prog="depgraph",
         description=(
             "Визуализация графа зависимостей Cargo. "
-            "Этап 3 строит транзитивный граф зависимостей."
+            "Этап 4 печатает порядок загрузки пакетов."
         ),
     )
     parser.add_argument(

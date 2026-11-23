@@ -36,6 +36,20 @@ def build_graph(root: str, neighbors: Neighbors, skip: str) -> Graph:
     return Graph(adjacency, tuple(order), cycles)
 
 
+def load_order(graph: Graph) -> tuple[str, ...]:
+    placed: list[str] = []
+    seen: set[str] = set()
+    for node in graph.order:
+        if node in seen:
+            continue
+        _place(node, graph.adjacency, seen, placed)
+    return tuple(placed)
+
+
+def format_load_order(order: tuple[str, ...]) -> str:
+    return "\n".join(["порядок загрузки:", *order])
+
+
 def format_graph(graph: Graph) -> str:
     lines = ["граф зависимостей:"]
     for node in graph.order:
@@ -73,6 +87,20 @@ def _expand(
             discovered.add(dep)
             nxt.append(dep)
     _expand(nxt, neighbors, skip, adjacency, order, discovered)
+
+
+def _place(
+    node: str,
+    adjacency: dict[str, tuple[str, ...]],
+    seen: set[str],
+    placed: list[str],
+) -> None:
+    seen.add(node)
+    for dep in adjacency.get(node, ()):
+        if dep in seen or dep not in adjacency:
+            continue
+        _place(dep, adjacency, seen, placed)
+    placed.append(node)
 
 
 def _visible(names: list[str], skip: str) -> list[str]:

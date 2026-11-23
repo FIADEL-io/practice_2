@@ -1,6 +1,11 @@
 import unittest
 
-from depgraph.graph import GraphError, build_graph, format_graph
+from depgraph.graph import (
+    GraphError,
+    build_graph,
+    format_graph,
+    load_order,
+)
 from depgraph.letter_graph import parse_letter_graph
 from depgraph.resolve import crate_dependencies
 
@@ -24,6 +29,16 @@ class GraphTests(unittest.TestCase):
         graph = build_graph("A", lambda _node: ["A"], "")
         text = format_graph(graph)
         self.assertIn("цикл: A -> A", text)
+
+    def test_load_order_puts_dependencies_first(self) -> None:
+        described = {"A": ("B", "C"), "B": ("D",), "C": ("D",), "D": ()}
+        graph = build_graph("A", lambda node: list(described[node]), "")
+        self.assertEqual(load_order(graph), ("D", "B", "C", "A"))
+
+    def test_load_order_lists_cycle_once(self) -> None:
+        described = {"A": ("B",), "B": ("A",)}
+        graph = build_graph("A", lambda node: list(described[node]), "")
+        self.assertEqual(load_order(graph), ("B", "A"))
 
     def test_filter_drops_matching_names(self) -> None:
         described = {"A": ("B", "C"), "B": ("D",), "C": ("D",), "D": ()}

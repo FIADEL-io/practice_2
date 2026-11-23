@@ -45,6 +45,8 @@ class CliTests(unittest.TestCase):
         self.assertIn("filter_substring: ", lines)
         self.assertIn("граф зависимостей:", lines)
         self.assertIn("serde -> serde_core, serde_derive", lines)
+        self.assertLess(lines.index("serde_core"), lines.index("serde"))
+        self.assertLess(lines.index("serde_derive"), lines.index("serde"))
 
     def test_prints_resolved_test_repository(self) -> None:
         stdout = io.StringIO()
@@ -65,6 +67,26 @@ class CliTests(unittest.TestCase):
         text = stdout.getvalue()
         self.assertEqual(code, EXIT_OK)
         self.assertIn("цикл: A -> B -> C -> A", text)
+        self.assertIn("порядок загрузки:\nC\nB\nA", text)
+
+    def test_diamond_prints_dependencies_before_package(self) -> None:
+        stdout = io.StringIO()
+        path = str(ROOT / "examples" / "test_order.yaml")
+        with contextlib.redirect_stdout(stdout):
+            code = main(["--config", path])
+        text = stdout.getvalue()
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("порядок загрузки:\nD\nB\nC\nA", text)
+
+    def test_filter_example_omits_filtered_package(self) -> None:
+        stdout = io.StringIO()
+        path = str(ROOT / "examples" / "test_filter.yaml")
+        with contextlib.redirect_stdout(stdout):
+            code = main(["--config", path])
+        text = stdout.getvalue()
+        self.assertEqual(code, EXIT_OK)
+        self.assertIn("порядок загрузки:\nD\nB\nA", text)
+        self.assertNotIn("\nC\n", text)
 
     def test_config_error_goes_to_stderr(self) -> None:
         stdout = io.StringIO()
