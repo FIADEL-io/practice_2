@@ -185,11 +185,12 @@ class _Parser:
 
     def _multiline(self, quote: str) -> str:
         self._index += len(quote)
-        end = self._text.find(quote, self._index)
-        if end < 0:
+        rest = self._text[self._index:]
+        if quote not in rest:
             raise CargoError("незакрытая строка в Cargo.toml")
-        value = self._text[self._index:end]
-        self._index = end + len(quote)
+        end = rest.find(quote)
+        value = rest[:end]
+        self._index += end + len(quote)
         return value
 
     def _escape(self) -> str:

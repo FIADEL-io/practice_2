@@ -14,7 +14,12 @@ from depgraph.cargo_manifest import (
     workspace_members,
 )
 from depgraph.config import AppConfig
-from depgraph.constants import GITHUB_BRANCHES, HTTP_NOT_FOUND, HTTP_TIMEOUT
+from depgraph.constants import (
+    GITHUB_BRANCHES,
+    HTTP_NOT_FOUND,
+    HTTP_TIMEOUT,
+    MIN_GITHUB_PATH_PARTS,
+)
 
 Reader = Callable[[str], str]
 
@@ -105,7 +110,7 @@ def _github_repo(repository: str) -> tuple[str, str]:
             "этап 2 читает Cargo.toml только из репозитория GitHub",
         )
     parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) < 2:
+    if len(parts) < MIN_GITHUB_PATH_PARTS:
         raise CargoError("в URL репозитория нет владельца и имени")
     repo = parts[1]
     if repo.endswith(".git"):
