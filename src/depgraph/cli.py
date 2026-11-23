@@ -7,6 +7,8 @@ from depgraph.cargo_manifest import CargoError
 from depgraph.config import AppConfig, ConfigError, load_config
 from depgraph.constants import EXIT_CONFIG, EXIT_OK
 from depgraph.dependencies import format_dependencies, load_direct_dependencies
+from depgraph.graph import GraphError, format_graph
+from depgraph.resolve import build_cargo_graph, build_test_graph
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -19,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_CONFIG
     print(format_parameters(config))
     if config.test_repository_mode:
-        return EXIT_OK
+        return _print_graph(lambda: build_test_graph(config))
     try:
         dependencies = load_direct_dependencies(config)
     except CargoError as error:
@@ -29,6 +31,18 @@ def main(argv: list[str] | None = None) -> int:
     rendered = format_dependencies(dependencies)
     if rendered != "":
         print(rendered)
+    return _print_graph(
+        lambda: build_cargo_graph(config, dependencies),
+    )
+
+
+def _print_graph(load) -> int:
+    try:
+        graph = load()
+    except (GraphError, CargoError) as error:
+        print(f"ошибка графа: {error}", file=sys.stderr)
+        return EXIT_CONFIG
+    print(format_graph(graph))
     return EXIT_OK
 
 
@@ -42,7 +56,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         prog="depgraph",
         description=(
             "Визуализация графа зависимостей Cargo. "
-            "Этап 2 выводит прямые зависимости пакета."
+            "Этап 3 строит транзитивный граф зависимостей."
         ),
     )
     parser.add_argument(
