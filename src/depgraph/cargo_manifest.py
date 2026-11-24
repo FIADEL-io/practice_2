@@ -10,7 +10,7 @@ class ManifestNotFound(CargoError):
 
 
 def parse_manifest(text: str) -> dict[str, object]:
-    parser = _Parser(text.lstrip("\ufeff"))
+    parser = ManifestParser(text.lstrip("\ufeff"))
     return parser.parse_document()
 
 
@@ -67,7 +67,7 @@ def _dependency(key: str, value: object) -> tuple[str, str]:
     return name, ""
 
 
-class _Parser:
+class ManifestParser:
 
     def __init__(self, text: str) -> None:
         self._text = text
